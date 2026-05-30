@@ -2,20 +2,32 @@ name: Jazz Discord Bot
 
 on:
   schedule:
-    # Game day alert — every day at 9:00 AM MT (16:00 UTC)
+    # Game day alert + news digest — every day at 9:00 AM MT (16:00 UTC)
     - cron: '0 16 * * *'
     # Live score updater — every 5 min, 6–11 PM MT (01:00–06:00 UTC next day)
     - cron: '*/5 1-6 * * *'
     # Standings — every Monday at 9:00 AM MT (16:00 UTC)
     - cron: '0 16 * * 1'
-    # News digest — every day at 9:00 AM MT (16:00 UTC, same as game alert, handled in script)
-    - cron: '0 16 * * *'
-  workflow_dispatch: # allows manual trigger from GitHub UI
+  workflow_dispatch:
+    inputs:
+      job:
+        description: 'Which job to run'
+        required: true
+        default: 'all'
+        type: choice
+        options:
+          - all
+          - game-alert
+          - live-scores
+          - standings
+          - news-digest
 
 jobs:
   game-alert:
     runs-on: ubuntu-latest
-    if: github.event.schedule == '0 16 * * *'
+    if: |
+      github.event.schedule == '0 16 * * *' ||
+      github.event_name == 'workflow_dispatch' && (github.event.inputs.job == 'all' || github.event.inputs.job == 'game-alert')
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -28,7 +40,9 @@ jobs:
 
   live-scores:
     runs-on: ubuntu-latest
-    if: github.event.schedule == '*/5 1-6 * * *'
+    if: |
+      github.event.schedule == '*/5 1-6 * * *' ||
+      github.event_name == 'workflow_dispatch' && (github.event.inputs.job == 'all' || github.event.inputs.job == 'live-scores')
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -41,7 +55,9 @@ jobs:
 
   standings:
     runs-on: ubuntu-latest
-    if: github.event.schedule == '0 16 * * 1'
+    if: |
+      github.event.schedule == '0 16 * * 1' ||
+      github.event_name == 'workflow_dispatch' && (github.event.inputs.job == 'all' || github.event.inputs.job == 'standings')
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -54,7 +70,9 @@ jobs:
 
   news-digest:
     runs-on: ubuntu-latest
-    if: github.event.schedule == '0 16 * * *'
+    if: |
+      github.event.schedule == '0 16 * * *' ||
+      github.event_name == 'workflow_dispatch' && (github.event.inputs.job == 'all' || github.event.inputs.job == 'news-digest')
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
