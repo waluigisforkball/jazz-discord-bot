@@ -1,0 +1,67 @@
+name: Jazz Discord Bot
+
+on:
+  schedule:
+    # Game day alert — every day at 9:00 AM MT (16:00 UTC)
+    - cron: '0 16 * * *'
+    # Live score updater — every 5 min, 6–11 PM MT (01:00–06:00 UTC next day)
+    - cron: '*/5 1-6 * * *'
+    # Standings — every Monday at 9:00 AM MT (16:00 UTC)
+    - cron: '0 16 * * 1'
+    # News digest — every day at 9:00 AM MT (16:00 UTC, same as game alert, handled in script)
+    - cron: '0 16 * * *'
+  workflow_dispatch: # allows manual trigger from GitHub UI
+
+jobs:
+  game-alert:
+    runs-on: ubuntu-latest
+    if: github.event.schedule == '0 16 * * *'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: pip install requests
+      - run: python scripts/game_alert.py
+        env:
+          WEBHOOK_GAME_CHAT: ${{ secrets.WEBHOOK_GAME_CHAT }}
+
+  live-scores:
+    runs-on: ubuntu-latest
+    if: github.event.schedule == '*/5 1-6 * * *'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: pip install requests
+      - run: python scripts/live_score.py
+        env:
+          WEBHOOK_GAME_CHAT: ${{ secrets.WEBHOOK_GAME_CHAT }}
+
+  standings:
+    runs-on: ubuntu-latest
+    if: github.event.schedule == '0 16 * * 1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: pip install requests
+      - run: python scripts/standings.py
+        env:
+          WEBHOOK_ANALYTICS: ${{ secrets.WEBHOOK_ANALYTICS }}
+
+  news-digest:
+    runs-on: ubuntu-latest
+    if: github.event.schedule == '0 16 * * *'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: pip install requests feedparser
+      - run: python scripts/news_digest.py
+        env:
+          WEBHOOK_TEAM_NEWS: ${{ secrets.WEBHOOK_TEAM_NEWS }}
+          WEBHOOK_LEAGUE_NEWS: ${{ secrets.WEBHOOK_LEAGUE_NEWS }}
